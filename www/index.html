@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no;" />
+    <title></title>
+    <link rel="stylesheet" href="style.css"></link>
+    <script src="phonegap-1.0.0.js"></script>
+    <script src="zepto.js"></script>
+    <script src="http://debug.phonegap.com/target/target-script-min.js#salesforce"></script>
+    <script>
+
+var q = {};
+window.location.href.replace(
+    new RegExp("([^?=&]+)(=([^&]*))?", "g"),
+    function($0, $1, $2, $3) { q[$1] = unescape($3); }
+);
+
+document.addEventListener('deviceready', function() {
+    if (q.instance_url) {
+        getChatter();
+    } else {
+        $('#login').css('display', 'block');
+    }
+}, false);
+
+function getChatter() {
+    var url = q.instance_url + '/services/data/v22.0/chatter/feeds/news/me/feed-items?'+(new Date().valueOf());
+
+    var options = {
+        url: url,
+        dataType: 'json',
+        headers: {
+            Authorization: 'OAuth ' + q.access_token
+        },
+        success: function(data) {
+            var html = '';
+            data.items.forEach(function(item) {
+                html += '<li><img src="'+item.user.photo.smallPhotoUrl+'">'+item.body.text+'</li>';
+            });
+            $('#chatter ul').html(html);
+
+            $('#login').css('display', 'none');
+            $('#chatter').css('display', 'block');
+        }
+    };
+
+    $.ajax(options);
+}
+
+function updateChatter() {
+    var value = $('#content').val();
+    var image = $('#picture').attr('src');
+    var url = q.instance_url + '/services/data/v22.0/chatter/feeds/news/me/feed-items';
+
+    var options = {
+        url: url,
+        type: 'POST',
+        dataType: 'json',
+        headers: {
+            Authorization: 'OAuth ' + q.access_token
+        },
+        data: {text: value},
+        success: function(data) {
+            $('#content').val('');
+            getChatter();
+        }
+    };
+
+    $.ajax(options);
+}
+
+function takePicture() {
+    navigator.camera.getPicture(function(imageData) {
+        $('#chatter').append('<img id="picture" src="data:image/jpeg;base64,'+imageData+'">')
+    }, function(message) { }, { quality: 50, targetWidth: 100, targetHeight: 100 });
+}
+
+    </script>
+  </head>
+  <body>
+    <div id="login" style="display:none;">
+      <a class="button orange" href="https://login.salesforce.com/services/oauth2/authorize?response_type=token&display=touch&client_id=3MVG9VmVOCGHKYBQvE16gq3yBOAMk7Xy75f0OTc2ww8ffDfWb1jw3P3dJvn.32nyG.vqNyQ9eMg==&redirect_uri=sfdcsample:success">login</a>
+    </div>
+    <div id="chatter" style="display:none;">
+      <ul>
+      </ul>
+      <div>
+        <textarea id="content"></textarea>
+      </div>
+      <a class="button orange" onclick="updateChatter()">update</a>
+      <a class="button orange" onclick="takePicture()">take picture</a>
+    </div>
+  </body>
+</html>
